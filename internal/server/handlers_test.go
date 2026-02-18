@@ -34,3 +34,32 @@ func TestHandleHello(t *testing.T) {
 			string(body), want)
 	}
 }
+
+func TestHandleGoodByte(t *testing.T) {
+	req, err := http.NewRequest(http.MethodGet, "/goodbye", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	handleGoodBye(rr, req)
+
+	res := rr.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("status mismatch: got %v, want %v", res.StatusCode, http.StatusOK)
+	}
+
+	body, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := `{"msg":"good bye"}` + "\n"
+
+	if string(body) != want {
+		t.Fatalf("body mismatch: got %v, want %v", string(body), want)
+	}
+}
