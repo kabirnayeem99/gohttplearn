@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -61,5 +62,69 @@ func TestHandleGoodByte(t *testing.T) {
 
 	if string(body) != want {
 		t.Fatalf("body mismatch: got %v, want %v", string(body), want)
+	}
+}
+
+func TestHelloParameterized(t *testing.T) {
+	tests := []struct {
+		name       string
+		url        string
+		wantStatus int
+		wantMsg    string
+	}{
+		{
+			name:       "with user returns greeting",
+			url:        "/hello?user=nabil",
+			wantStatus: http.StatusOK,
+			wantMsg:    "hello, nabil",
+		},
+		{
+			name:       "no user returns default greeting",
+			url:        "/hello",
+			wantStatus: http.StatusOK,
+			wantMsg:    "hello",
+		},
+		{
+			name:       "empty user param returns 400",
+			url:        "/hello?user=",
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			rr := httptest.NewRecorder()
+
+			handleHelloParameterized(rr, req)
+
+			res := rr.Result()
+			defer res.Body.Close()
+
+			if res.StatusCode != tt.wantStatus {
+				t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
+			}
+
+			if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+				t.Fatalf("content-type: got %q want %q", ct, "application/json")
+			}
+
+			if tt.wantStatus != http.StatusOK {
+				return
+			}
+
+			var body struct {
+				Msg string `json:"msg"`
+			}
+			if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+
+			if body.Msg != tt.wantMsg {
+				t.Fatalf("msg: got %q want %q", body.Msg, tt.wantMsg)
+			}
+		})
 	}
 }
