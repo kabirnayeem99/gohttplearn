@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 )
 
 func handleHello(w http.ResponseWriter, r *http.Request) {
@@ -56,4 +57,35 @@ func handleHelloParameterized(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("failed to encode", "err", err)
 	}
+}
+
+func handlerGreetingsUserHello(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	user := r.PathValue("user")
+
+	if user == "" {
+		http.Error(w, `{"error":"missing user"}`, http.StatusNotFound)
+		w.Header().Set("Content-Type", "application/json")
+	}
+
+	if !isValidUsername(user) {
+		http.Error(w, `{"error":"invalid username"}`, http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+	}
+
+	err := json.NewEncoder(w).Encode(map[string]string{
+		"msg": fmt.Sprintf("hello, %v", user),
+	})
+
+	if err != nil {
+		slog.Error("failed to encode", "err", err)
+	}
+
+}
+
+var usernameRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{2,19}$`)
+
+func isValidUsername(u string) bool {
+	return usernameRe.MatchString(u)
 }
