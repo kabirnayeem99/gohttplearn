@@ -1,11 +1,16 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
+	"mime"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/kabirnayeem99/gohttplearn/internal/model"
 )
 
 func TestHandleHello(t *testing.T) {
@@ -107,7 +112,7 @@ func TestHelloParameterized(t *testing.T) {
 				t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 			}
 
-			if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
+			if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
 				t.Fatalf("content-type: got %q want %q", ct, "application/json")
 			}
 
@@ -182,7 +187,7 @@ func TestHandlerGreetingsUserHello(t *testing.T) {
 					t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 				}
 
-				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
 					t.Fatalf("content-type: got %q want %q", ct, "application/json")
 				}
 
@@ -260,7 +265,7 @@ func TestHandlerGreetingsHello(t *testing.T) {
 					t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 				}
 
-				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8" {
 					t.Fatalf("content-type: got %q want %q", ct, "application/json")
 				}
 
@@ -282,5 +287,100 @@ func TestHandlerGreetingsHello(t *testing.T) {
 
 			},
 		)
+	}
+}
+
+func TestHandleGreetingsNewHello(t *testing.T) {
+	tests := []struct {
+		name       string
+		method     string
+		url        string
+		body       any
+		wantStatus int
+		wantMsg    string
+	}{
+		{
+			name:       "with user returns greeting",
+			method:     http.MethodPost,
+			url:        "/greetings/hello",
+			body:       model.UserDataDto{Name: "nabil"},
+			wantStatus: http.StatusOK,
+			wantMsg:    "hello, nabil",
+		},
+		{
+			name:       "missing user returns bad request",
+			method:     http.MethodPost,
+			url:        "/greetings/hello",
+			body:       model.UserDataDto{Name: ""},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "invalid user returns bad request",
+			method:     http.MethodPost,
+			url:        "/greetings/hello",
+			body:       model.UserDataDto{Name: "nabil-bhul"},
+			wantStatus: http.StatusBadRequest,
+		},
+		{
+			name:       "invalid json returns bad request",
+			method:     http.MethodPost,
+			url:        "/greetings/hello",
+			body:       `{"name":`, // broken JSON
+			wantStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			var req *http.Request
+
+			switch v := tt.body.(type) {
+			case string:
+				req = httptest.NewRequest(tt.method, tt.url, strings.NewReader(v))
+			default:
+				b, err := json.Marshal(v)
+				if err != nil {
+					t.Fatal(err)
+				}
+				req = httptest.NewRequest(tt.method, tt.url, bytes.NewReader(b))
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+
+			rr := httptest.NewRecorder()
+			handleGreetingsNewHello(rr, req)
+
+			res := rr.Result()
+			defer res.Body.Close()
+
+			if res.StatusCode != tt.wantStatus {
+				t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
+			}
+
+			ct := res.Header.Get("Content-Type")
+			mediaType, _, err := mime.ParseMediaType(ct)
+			if err != nil {
+				t.Fatalf("bad content-type %q: %v", ct, err)
+			}
+			if mediaType != "application/json" {
+				t.Fatalf("content-type: got %q want %q", mediaType, "application/json")
+			}
+
+			if tt.wantStatus != http.StatusOK {
+				return
+			}
+
+			var body struct {
+				Msg string `json:"msg"`
+			}
+			if err := json.NewDecoder(res.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			if body.Msg != tt.wantMsg {
+				t.Fatalf("msg: got %q want %q", body.Msg, tt.wantMsg)
+			}
+		})
 	}
 }
