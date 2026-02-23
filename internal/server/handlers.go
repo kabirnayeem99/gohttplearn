@@ -84,6 +84,25 @@ func handlerGreetingsUserHello(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func handleGreetingsHello(w http.ResponseWriter, r *http.Request) {
+	user := r.Header.Get("user")
+	w.Header().Set("Content-Type", "application/json")
+
+	if user == "" || !isValidUsername(user) {
+		http.Error(w, `{"error":"missing user"}`, http.StatusBadRequest)
+		w.Header().Set("Content-Type", "application/json")
+	}
+
+	err := json.NewEncoder(w).Encode(map[string]string{
+		"msg": fmt.Sprintf("hello, %v", user),
+	})
+
+	if err != nil {
+		slog.Error("failed to encode", "err", err)
+	}
+
+}
+
 var usernameRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]{2,19}$`)
 
 func isValidUsername(u string) bool {
