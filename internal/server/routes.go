@@ -6,4 +6,5 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("/hello", handleHelloParameterized)
 	s.mux.HandleFunc("/greetings/hello", handleGreetingsHello)
 	s.mux.HandleFunc("/greetings/{user}/hello", handlerGreetingsUserHello)
+	s.mux.HandleFunc("/greetingsnew/hello", handleGreetingsNewHello)
 }

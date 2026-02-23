@@ -107,7 +107,7 @@ func TestHelloParameterized(t *testing.T) {
 				t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 			}
 
-			if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+			if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
 				t.Fatalf("content-type: got %q want %q", ct, "application/json")
 			}
 
@@ -182,7 +182,7 @@ func TestHandlerGreetingsUserHello(t *testing.T) {
 					t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 				}
 
-				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
 					t.Fatalf("content-type: got %q want %q", ct, "application/json")
 				}
 
@@ -260,7 +260,7 @@ func TestHandlerGreetingsHello(t *testing.T) {
 					t.Fatalf("status: got %d want %d", res.StatusCode, tt.wantStatus)
 				}
 
-				if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+				if ct := rr.Header().Get("Content-Type"); ct != "application/json; charset=utf-8"{
 					t.Fatalf("content-type: got %q want %q", ct, "application/json")
 				}
 
